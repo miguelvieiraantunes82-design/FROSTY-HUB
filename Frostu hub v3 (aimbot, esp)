@@ -1,9 +1,9 @@
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
+-- Estado da UI e configs
 local uiOpen = true
 local activeTab = "Aimbot"
-
 local fov = 50
 local fovMin, fovMax = 10, 150
 
@@ -16,11 +16,11 @@ local colorOptions = {
 }
 local colorIndex = 1
 
-local uiWidth, uiHeight = 410, 190
-local uiPosX, uiPosY = 60, 100
+-- UI Layout
+local uiWidth, uiHeight = 430, 220
+local uiPosX, uiPosY = 60, 90
 local tabs = {"Aimbot", "ESP"}
 local tabWidth = uiWidth / #tabs
-
 local drawings = {}
 
 local function drawElement(type, props)
@@ -39,77 +39,166 @@ local function clearUI()
     drawings = {}
 end
 
+local function drawTabButton(i, tab, active)
+    local tabX = uiPosX + (i-1) * tabWidth
+    drawElement("Square", {
+        Position = Vector2.new(tabX, uiPosY + 40),
+        Size = Vector2.new(tabWidth-1, 32),
+        Color = active and Color3.fromRGB(50,140,255) or Color3.fromRGB(38,38,38),
+        Filled = true,
+        Transparency = active and 1 or 0.93
+    })
+    drawElement("Text", {
+        Position = Vector2.new(tabX + tabWidth/2, uiPosY + 56),
+        Text = tab,
+        Color = active and Color3.fromRGB(255,255,255) or Color3.fromRGB(160,160,160),
+        Size = 19,
+        Center = true,
+        Outline = active,
+        Font = 2
+    })
+end
+
+local function drawFovSlider()
+    local sliderX, sliderY = uiPosX + 40, uiPosY + 108
+    local sliderW, sliderH = 220, 15
+    -- Base
+    drawElement("Square", {
+        Position = Vector2.new(sliderX, sliderY),
+        Size = Vector2.new(sliderW, sliderH),
+        Color = Color3.fromRGB(44,44,44),
+        Filled = true,
+        Transparency = 0.91
+    })
+    -- Progress
+    local sliderPos = ((fov-fovMin)/(fovMax-fovMin)) * sliderW
+    drawElement("Square", {
+        Position = Vector2.new(sliderX, sliderY),
+        Size = Vector2.new(sliderPos, sliderH),
+        Color = Color3.fromRGB(80,160,255),
+        Filled = true,
+        Transparency = 0.94
+    })
+    -- Handle
+    drawElement("Circle", {
+        Position = Vector2.new(sliderX + sliderPos, sliderY + sliderH/2),
+        Radius = 10,
+        Color = Color3.fromRGB(80,160,255),
+        Filled = true,
+        Thickness = 2,
+        Transparency = 1
+    })
+end
+
+local function drawColorPicker()
+    local baseX, baseY = uiPosX + 40, uiPosY + 108
+    local spacing = 43
+    for i, v in ipairs(colorOptions) do
+        drawElement("Circle", {
+            Position = Vector2.new(baseX + (i-1)*spacing, baseY),
+            Radius = (i == colorIndex) and 15 or 12,
+            Color = v.color,
+            Filled = true,
+            Transparency = 0.95,
+            Thickness = (i == colorIndex) and 4 or 2
+        })
+        if i == colorIndex then
+            drawElement("Circle", {
+                Position = Vector2.new(baseX + (i-1)*spacing, baseY),
+                Radius = 18,
+                Color = Color3.fromRGB(255,255,255),
+                Filled = false,
+                Transparency = 0.85,
+                Thickness = 2
+            })
+        end
+        drawElement("Text", {
+            Position = Vector2.new(baseX + (i-1)*spacing, baseY + 25),
+            Text = v.name,
+            Color = v.color,
+            Size = 13,
+            Center = true,
+            Outline = false,
+            Font = 2
+        })
+    end
+end
+
 local function drawUI()
     clearUI()
     if not uiOpen then return end
+
+    -- Sombra
+    drawElement("Square", {
+        Position = Vector2.new(uiPosX+5, uiPosY+5),
+        Size = Vector2.new(uiWidth, uiHeight),
+        Color = Color3.fromRGB(10,10,10),
+        Filled = true,
+        Transparency = 0.45
+    })
+    -- Fundo
     drawElement("Square", {
         Position = Vector2.new(uiPosX, uiPosY),
         Size = Vector2.new(uiWidth, uiHeight),
-        Color = Color3.fromRGB(25, 25, 25),
+        Color = Color3.fromRGB(23, 26, 34),
         Filled = true,
-        Transparency = 0.85
+        Transparency = 0.92
     })
+    -- Título
     drawElement("Text", {
-        Position = Vector2.new(uiPosX + 10, uiPosY + 6),
-        Text = "Frosty Hub v3",
+        Position = Vector2.new(uiPosX + 18, uiPosY + 14),
+        Text = "Delta UI - Frosty v3",
         Color = Color3.fromRGB(190,255,255),
-        Size = 23,
+        Size = 25,
         Center = false,
         Outline = true,
         Font = 3
     })
+
+    -- Tabs
     for i,tab in ipairs(tabs) do
-        local tabX = uiPosX + (i-1) * tabWidth
-        drawElement("Square", {
-            Position = Vector2.new(tabX, uiPosY + 35),
-            Size = Vector2.new(tabWidth-1, 30),
-            Color = activeTab == tab and Color3.fromRGB(50,120,255) or Color3.fromRGB(40,40,40),
-            Filled = true,
-            Transparency = 0.92
-        })
-        drawElement("Text", {
-            Position = Vector2.new(tabX + tabWidth/2, uiPosY + 50),
-            Text = tab,
-            Color = Color3.fromRGB(255,255,255),
-            Size = 18,
-            Center = true,
-            Outline = true,
-            Font = 2
-        })
+        drawTabButton(i, tab, activeTab==tab)
     end
+
+    -- Conteúdo
     if activeTab == "Aimbot" then
         drawElement("Text", {
-            Position = Vector2.new(uiPosX + 30, uiPosY + 80),
+            Position = Vector2.new(uiPosX + 40, uiPosY + 90),
             Text = "FOV: "..fov,
             Color = Color3.fromRGB(255,255,255),
-            Size = 19,
+            Size = 20,
             Center = false,
             Outline = true,
             Font = 2
         })
-        drawElement("Square", {
-            Position = Vector2.new(uiPosX + 30, uiPosY + 110),
-            Size = Vector2.new(200, 12),
-            Color = Color3.fromRGB(40,40,40),
-            Filled = true,
-            Transparency = 0.8
-        })
-        local sliderPos = ((fov-fovMin)/(fovMax-fovMin)) * 200
-        drawElement("Square", {
-            Position = Vector2.new(uiPosX + 30 + sliderPos - 5, uiPosY + 108),
-            Size = Vector2.new(10,16),
-            Color = Color3.fromRGB(80,140,255),
-            Filled = true,
-            Transparency = 1
+        drawFovSlider()
+        drawElement("Text", {
+            Position = Vector2.new(uiPosX + 40, uiPosY + 153),
+            Text = "Arraste para ajustar o FOV.",
+            Color = Color3.fromRGB(120,120,120),
+            Size = 13,
+            Center = false,
+            Outline = false,
+            Font = 2
         })
     elseif activeTab == "ESP" then
         drawElement("Text", {
-            Position = Vector2.new(uiPosX + 30, uiPosY + 80),
-            Text = "Cor: "..colorOptions[colorIndex].name,
-            Color = espColor,
-            Size = 19,
+            Position = Vector2.new(uiPosX + 40, uiPosY + 90),
+            Text = "Cor do ESP:",
+            Color = Color3.fromRGB(255,255,255),
+            Size = 20,
             Center = false,
             Outline = true,
+            Font = 2
+        })
+        drawColorPicker()
+        drawElement("Text", {
+            Position = Vector2.new(uiPosX + 40, uiPosY + 153),
+            Text = "Toque no círculo para trocar a cor.",
+            Color = Color3.fromRGB(120,120,120),
+            Size = 13,
+            Center = false,
+            Outline = false,
             Font = 2
         })
     end
@@ -118,56 +207,83 @@ end
 -- Atualização do desenho da UI em loop
 RunService.RenderStepped:Connect(drawUI)
 
--- TOQUE para abrir/fechar a UI (região canto superior esquerdo)
-UserInputService.TouchTap:Connect(function(touches)
-    for _,touch in ipairs(touches) do
-        if touch.Position.X < 80 and touch.Position.Y < 40 then
-            uiOpen = not uiOpen
-        end
-    end
-end)
+-- Abrir/fechar UI (canto superior esquerdo)
+local function isInside(x, y, px, py, w, h)
+    return x > px and x < px+w and y > py and y < py+h
+end
 
--- Toque nas abas
-UserInputService.TouchTap:Connect(function(touches)
-    if not uiOpen then return end
-    for _,touch in ipairs(touches) do
-        for i,tab in ipairs(tabs) do
+local function handleInputBegan(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        local x, y = input.Position.X, input.Position.Y
+        if isInside(x, y, uiPosX, uiPosY, 50, 35) then -- header
+            uiOpen = not uiOpen
+            return
+        end
+        if not uiOpen then return end
+        -- Tabs
+        for i, tab in ipairs(tabs) do
             local tabX = uiPosX + (i-1) * tabWidth
-            if touch.Position.X > tabX and touch.Position.X < tabX+tabWidth and
-               touch.Position.Y > uiPosY + 35 and touch.Position.Y < uiPosY + 65 then
+            if isInside(x, y, tabX, uiPosY+40, tabWidth, 32) then
                 activeTab = tab
+                return
+            end
+        end
+        if activeTab == "ESP" then
+            -- Cores
+            local baseX, baseY = uiPosX+40, uiPosY+108
+            local spacing = 43
+            for i = 1, #colorOptions do
+                local cx, cy = baseX + (i-1)*spacing, baseY
+                if (Vector2.new(x, y) - Vector2.new(cx, cy)).Magnitude < 17 then
+                    colorIndex = i
+                    espColor = colorOptions[i].color
+                    return
+                end
             end
         end
     end
-end)
+end
 
--- Slider FOV (simples, arraste horizontal)
 local draggingFov = false
-UserInputService.TouchStarted:Connect(function(input)
+local function handleInputChanged(input)
+    if draggingFov and activeTab == "Aimbot" then
+        local x = input.Position.X
+        local sliderX = uiPosX + 40
+        local rel = math.clamp(x - sliderX, 0, 220)
+        fov = math.floor(fovMin + ((fovMax-fovMin) * (rel/220)))
+    end
+end
+
+local function handleInputEnd(input)
+    draggingFov = false
+end
+
+-- Slider FOV (mouse/touch)
+local function handleSliderDrag(input)
     if not uiOpen or activeTab ~= "Aimbot" then return end
     local x, y = input.Position.X, input.Position.Y
-    if x > uiPosX + 30 and x < uiPosX + 230 and y > uiPosY + 110 and y < uiPosY + 122 then
+    if isInside(x, y, uiPosX+40, uiPosY+108, 220, 15) then
         draggingFov = true
+        handleInputChanged(input)
     end
-end)
-UserInputService.TouchMoved:Connect(function(input)
-    if draggingFov then
-        local rel = math.clamp(input.Position.X - (uiPosX + 30), 0, 200)
-        fov = math.floor(fovMin + ((fovMax-fovMin) * (rel/200)))
-    end
-end)
-UserInputService.TouchEnded:Connect(function(input)
-    draggingFov = false
-end)
+end
 
--- Troca de cor ESP (toque no texto da cor)
-UserInputService.TouchTap:Connect(function(touches)
-    if not uiOpen or activeTab ~= "ESP" then return end
-    for _,touch in ipairs(touches) do
-        local tx, ty = uiPosX + 30, uiPosY + 80
-        if touch.Position.X > tx and touch.Position.X < tx+120 and touch.Position.Y > ty and touch.Position.Y < ty+24 then
-            colorIndex = colorIndex % #colorOptions + 1
-            espColor = colorOptions[colorIndex].color
-        end
-    end
+-- Bindings para Mouse e Touch
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    handleInputBegan(input)
+    handleSliderDrag(input)
 end)
+UserInputService.InputChanged:Connect(handleInputChanged)
+UserInputService.InputEnded:Connect(handleInputEnd)
+
+-- Suporte touch legacy (caso esteja rodando só em mobile)
+if UserInputService.TouchTap then
+    UserInputService.TouchTap:Connect(function(touches)
+        for _,touch in ipairs(touches) do
+            -- Simula InputBegan
+            handleInputBegan({Position = touch.Position, UserInputType = Enum.UserInputType.Touch})
+            handleSliderDrag({Position = touch.Position, UserInputType = Enum.UserInputType.Touch})
+        end
+    end)
+end
