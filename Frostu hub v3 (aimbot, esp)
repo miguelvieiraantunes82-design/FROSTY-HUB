@@ -1,16 +1,12 @@
-FROSTY HUB V3
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
--- Estado da UI
 local uiOpen = true
 local activeTab = "Aimbot"
 
--- Configuração do Aimbot
 local fov = 50
 local fovMin, fovMax = 10, 150
 
--- Configuração do ESP
 local espColor = Color3.fromRGB(255, 0, 0)
 local colorOptions = {
     {name="Vermelho", color=Color3.fromRGB(255,0,0)},
@@ -20,13 +16,11 @@ local colorOptions = {
 }
 local colorIndex = 1
 
--- Layout
 local uiWidth, uiHeight = 410, 190
 local uiPosX, uiPosY = 60, 100
 local tabs = {"Aimbot", "ESP"}
 local tabWidth = uiWidth / #tabs
 
--- Drawing Elements
 local drawings = {}
 
 local function drawElement(type, props)
@@ -36,4 +30,144 @@ local function drawElement(type, props)
     end
     table.insert(drawings, obj)
     return obj
+end
 
+local function clearUI()
+    for _,obj in ipairs(drawings) do
+        obj:Remove()
+    end
+    drawings = {}
+end
+
+local function drawUI()
+    clearUI()
+    if not uiOpen then return end
+    drawElement("Square", {
+        Position = Vector2.new(uiPosX, uiPosY),
+        Size = Vector2.new(uiWidth, uiHeight),
+        Color = Color3.fromRGB(25, 25, 25),
+        Filled = true,
+        Transparency = 0.85
+    })
+    drawElement("Text", {
+        Position = Vector2.new(uiPosX + 10, uiPosY + 6),
+        Text = "Frosty Hub v3",
+        Color = Color3.fromRGB(190,255,255),
+        Size = 23,
+        Center = false,
+        Outline = true,
+        Font = 3
+    })
+    for i,tab in ipairs(tabs) do
+        local tabX = uiPosX + (i-1) * tabWidth
+        drawElement("Square", {
+            Position = Vector2.new(tabX, uiPosY + 35),
+            Size = Vector2.new(tabWidth-1, 30),
+            Color = activeTab == tab and Color3.fromRGB(50,120,255) or Color3.fromRGB(40,40,40),
+            Filled = true,
+            Transparency = 0.92
+        })
+        drawElement("Text", {
+            Position = Vector2.new(tabX + tabWidth/2, uiPosY + 50),
+            Text = tab,
+            Color = Color3.fromRGB(255,255,255),
+            Size = 18,
+            Center = true,
+            Outline = true,
+            Font = 2
+        })
+    end
+    if activeTab == "Aimbot" then
+        drawElement("Text", {
+            Position = Vector2.new(uiPosX + 30, uiPosY + 80),
+            Text = "FOV: "..fov,
+            Color = Color3.fromRGB(255,255,255),
+            Size = 19,
+            Center = false,
+            Outline = true,
+            Font = 2
+        })
+        drawElement("Square", {
+            Position = Vector2.new(uiPosX + 30, uiPosY + 110),
+            Size = Vector2.new(200, 12),
+            Color = Color3.fromRGB(40,40,40),
+            Filled = true,
+            Transparency = 0.8
+        })
+        local sliderPos = ((fov-fovMin)/(fovMax-fovMin)) * 200
+        drawElement("Square", {
+            Position = Vector2.new(uiPosX + 30 + sliderPos - 5, uiPosY + 108),
+            Size = Vector2.new(10,16),
+            Color = Color3.fromRGB(80,140,255),
+            Filled = true,
+            Transparency = 1
+        })
+    elseif activeTab == "ESP" then
+        drawElement("Text", {
+            Position = Vector2.new(uiPosX + 30, uiPosY + 80),
+            Text = "Cor: "..colorOptions[colorIndex].name,
+            Color = espColor,
+            Size = 19,
+            Center = false,
+            Outline = true,
+            Font = 2
+        })
+    end
+end
+
+-- Atualização do desenho da UI em loop
+RunService.RenderStepped:Connect(drawUI)
+
+-- TOQUE para abrir/fechar a UI (região canto superior esquerdo)
+UserInputService.TouchTap:Connect(function(touches)
+    for _,touch in ipairs(touches) do
+        if touch.Position.X < 80 and touch.Position.Y < 40 then
+            uiOpen = not uiOpen
+        end
+    end
+end)
+
+-- Toque nas abas
+UserInputService.TouchTap:Connect(function(touches)
+    if not uiOpen then return end
+    for _,touch in ipairs(touches) do
+        for i,tab in ipairs(tabs) do
+            local tabX = uiPosX + (i-1) * tabWidth
+            if touch.Position.X > tabX and touch.Position.X < tabX+tabWidth and
+               touch.Position.Y > uiPosY + 35 and touch.Position.Y < uiPosY + 65 then
+                activeTab = tab
+            end
+        end
+    end
+end)
+
+-- Slider FOV (simples, arraste horizontal)
+local draggingFov = false
+UserInputService.TouchStarted:Connect(function(input)
+    if not uiOpen or activeTab ~= "Aimbot" then return end
+    local x, y = input.Position.X, input.Position.Y
+    if x > uiPosX + 30 and x < uiPosX + 230 and y > uiPosY + 110 and y < uiPosY + 122 then
+        draggingFov = true
+    end
+end)
+UserInputService.TouchMoved:Connect(function(input)
+    if draggingFov then
+        local rel = math.clamp(input.Position.X - (uiPosX + 30), 0, 200)
+        fov = math.floor(fovMin + ((fovMax-fovMin) * (rel/200)))
+    end
+end)
+UserInputService.TouchEnded:Connect(function(input)
+    draggingFov = false
+end)
+
+-- Troca de cor ESP (toque no texto da cor)
+UserInputService.TouchTap:Connect(function(touches)
+    if not uiOpen or activeTab ~= "ESP" then return end
+    for _,touch in ipairs(touches) do
+        local tx, ty = uiPosX + 30, uiPosY + 80
+        if touch.Position.X > tx and touch.Position.X < tx+120 and touch.Position.Y > ty and touch.Position.Y < ty+24 then
+            colorIndex = colorIndex % #colorOptions + 1
+            espColor = colorOptions[colorIndex].color
+        end
+    end
+end)
