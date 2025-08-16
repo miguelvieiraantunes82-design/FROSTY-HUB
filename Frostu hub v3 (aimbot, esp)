@@ -1,0 +1,39 @@
+FROSTY HUB V3
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+-- Estado da UI
+local uiOpen = true
+local activeTab = "Aimbot"
+
+-- Configuração do Aimbot
+local fov = 50
+local fovMin, fovMax = 10, 150
+
+-- Configuração do ESP
+local espColor = Color3.fromRGB(255, 0, 0)
+local colorOptions = {
+    {name="Vermelho", color=Color3.fromRGB(255,0,0)},
+    {name="Verde", color=Color3.fromRGB(0,255,0)},
+    {name="Azul", color=Color3.fromRGB(0,170,255)},
+    {name="Amarelo", color=Color3.fromRGB(255,255,0)},
+}
+local colorIndex = 1
+
+-- Layout
+local uiWidth, uiHeight = 410, 190
+local uiPosX, uiPosY = 60, 100
+local tabs = {"Aimbot", "ESP"}
+local tabWidth = uiWidth / #tabs
+
+-- Drawing Elements
+local drawings = {}
+
+local function drawElement(type, props)
+    local obj = Drawing.new(type)
+    for k,v in pairs(props) do
+        obj[k] = v
+    end
+    table.insert(drawings, obj)
+    return obj
+
