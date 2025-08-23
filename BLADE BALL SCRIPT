@@ -1,1 +1,186 @@
+-- Reaper Hub para Blade Ball
+-- Feito para estudo/educação
 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
+
+-- Utilidade para criar objetos
+local function create(class, props)
+    local obj = Instance.new(class)
+    for i, v in pairs(props) do
+        obj[i] = v
+    end
+    return obj
+end
+
+-- UI Principal
+local gui = create("ScreenGui", {Name="ReaperHub", Parent=player:WaitForChild("PlayerGui"), ResetOnSpawn=false})
+local frame = create("Frame", {
+    Name = "MainFrame",
+    Parent = gui,
+    Size = UDim2.new(0,320,0,240),
+    Position = UDim2.new(0.5,-160,0.5,-120),
+    BackgroundColor3=Color3.fromRGB(25,25,25),
+    BorderSizePixel=0,
+    Visible=true
+})
+
+local title = create("TextLabel", {
+    Parent = frame,
+    Size = UDim2.new(1,0,0,40),
+    BackgroundTransparency=1,
+    Text="Reaper Hub",
+    Font=Enum.Font.SourceSansBold,
+    TextSize=28,
+    TextColor3=Color3.fromRGB(200,0,0)
+})
+
+local minimize = create("TextButton", {
+    Parent = frame,
+    Size = UDim2.new(0,40,0,40),
+    Position = UDim2.new(1,-45,0,0),
+    BackgroundColor3=Color3.fromRGB(40,40,40),
+    Text="-",
+    Font=Enum.Font.SourceSansBold,
+    TextSize=24,
+    TextColor3=Color3.fromRGB(255,255,255)
+})
+
+local open = create("TextButton", {
+    Parent = gui,
+    Size = UDim2.new(0,140,0,40),
+    Position = UDim2.new(0.01,0,0.11,0),
+    BackgroundColor3=Color3.fromRGB(40,40,40),
+    Text="Abrir Reaper Hub",
+    Font=Enum.Font.SourceSansBold,
+    TextSize=18,
+    TextColor3=Color3.fromRGB(255,255,255),
+    Visible=false
+})
+
+-- Botões de funções
+local autoParryBtn = create("TextButton", {
+    Parent = frame,
+    Size = UDim2.new(0.8,0,0,36),
+    Position = UDim2.new(0.1,0,0,50),
+    BackgroundColor3=Color3.fromRGB(60,60,60),
+    Text="Auto Parry [OFF]",
+    Font=Enum.Font.SourceSansBold,
+    TextSize=20,
+    TextColor3=Color3.fromRGB(200,200,200)
+})
+
+local manualSpamBtn = create("TextButton", {
+    Parent = frame,
+    Size = UDim2.new(0.8,0,0,36),
+    Position = UDim2.new(0.1,0,0,100),
+    BackgroundColor3=Color3.fromRGB(60,60,60),
+    Text="Manual Spam",
+    Font=Enum.Font.SourceSansBold,
+    TextSize=20,
+    TextColor3=Color3.fromRGB(200,200,200)
+})
+
+local c9Btn = create("TextButton", {
+    Parent = frame,
+    Size = UDim2.new(0.8,0,0,36),
+    Position = UDim2.new(0.1,0,0,150),
+    BackgroundColor3=Color3.fromRGB(60,60,60),
+    Text="Parry Precision (C9) [OFF]",
+    Font=Enum.Font.SourceSansBold,
+    TextSize=20,
+    TextColor3=Color3.fromRGB(0,200,200)
+})
+
+-- Drag da UI
+local dragging, dragInput, dragStart, startPos
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+frame.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+minimize.MouseButton1Click:Connect(function()
+    frame.Visible = false
+    open.Visible = true
+end)
+open.MouseButton1Click:Connect(function()
+    frame.Visible = true
+    open.Visible = false
+end)
+
+-- Função fictícia de parry (AJUSTE para o jogo real)
+function doParry()
+    -- Exemplo: ReplicatedStorage.Remotes.Parry:FireServer()
+    print("Parry disparado")
+    -- Descomente e ajuste para o jogo real:
+    -- ReplicatedStorage.Remotes.Parry:FireServer()
+end
+
+-- Auto Parry
+local autoParry = false
+local autoCon
+autoParryBtn.MouseButton1Click:Connect(function()
+    autoParry = not autoParry
+    autoParryBtn.Text = autoParry and "Auto Parry [ON]" or "Auto Parry [OFF]"
+    if autoParry then
+        autoCon = RunService.RenderStepped:Connect(function()
+            local char = player.Character
+            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+            local ball = workspace:FindFirstChild("Ball")
+            if ball and (char.HumanoidRootPart.Position - ball.Position).Magnitude < 17 then
+                doParry()
+            end
+        end)
+    else
+        if autoCon then autoCon:Disconnect() end
+    end
+end)
+
+-- Manual Spam
+manualSpamBtn.MouseButton1Click:Connect(function()
+    for i = 1, 12 do
+        doParry()
+        wait(0.08)
+    end
+end)
+
+-- Parry Precision (C9/Accurration)
+local c9 = false
+local c9Con
+c9Btn.MouseButton1Click:Connect(function()
+    c9 = not c9
+    c9Btn.Text = c9 and "Parry Precision (C9) [ON]" or "Parry Precision (C9) [OFF]"
+    if c9 then
+        c9Con = RunService.RenderStepped:Connect(function()
+            local char = player.Character
+            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+            local ball = workspace:FindFirstChild("Ball")
+            if ball then
+                local ballVel = ball.Velocity.Magnitude
+                local dist = (char.HumanoidRootPart.Position - ball.Position).Magnitude
+                -- Cálculo de timing preciso, ajuste para o método do seu jogo!
+                if ballVel > 1 and dist/ballVel <= 0.10 then -- Parry ~0.10s antes do contato
+                    doParry()
+                end
+            end
+        end)
+    else
+        if c9Con then c9Con:Disconnect() end
+    end
+end)
